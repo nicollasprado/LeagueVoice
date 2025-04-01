@@ -1,21 +1,22 @@
 import "dotenv/config";
 import express from "express";
-import { commandInfo, commandTest } from "./commandHandler.js";
+import { commandInfo, commandLink, commandTest } from "./commandHandler.js";
 import axios from "axios";
 import { URLSearchParams } from "url";
 import {
-  ButtonStyleTypes,
-  InteractionResponseFlags,
   InteractionResponseType,
   InteractionType,
-  MessageComponentTypes,
   verifyKeyMiddleware,
 } from "discord-interactions";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 // Create an express app
 const app = express();
 // Get port, or default to 3000
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST;
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
@@ -41,13 +42,18 @@ app.post(
      */
     if (type === InteractionType.APPLICATION_COMMAND) {
       const { name, options } = data;
-      const targetId = options[0].value;
+      const authorId = req.body.member.user.id;
 
       switch (name) {
         case "test":
           return commandTest(res);
         case "info":
+          if (options) {
+            const targetId = options[0].value;
+          }
           return commandInfo(res, targetId);
+        case "link":
+          return commandLink(res, authorId);
         default:
           console.error(`unknown command: ${name}`);
           return res.status(400).json({ error: "unknown command" });
@@ -68,11 +74,10 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
       client_secret: process.env.DISCORD_SECRET,
       grant_type: "authorization_code",
       code: code.toString(),
-      redirect_uri:
-        "https://4535-187-61-200-25.ngrok-free.app/api/auth/discord/redirect",
+      redirect_uri: `${HOST}/api/auth/discord/redirect`,
     });
 
-    const output = await axios.post(
+    const oauthToken = await axios.post(
       "https://discord.com/api/v10/oauth2/token",
       data,
       {
@@ -82,8 +87,8 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
       }
     );
 
-    if (output.data) {
-      const access = output.data.access_token;
+    if (oauthToken.data) {
+      const access = oauthToken.data.access_token;
 
       const userConns = await axios.get(
         "https://discord.com/api/v10/users/@me/connections",
@@ -94,8 +99,56 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
         }
       );
 
-      console.log(userConns.data);
+      const userIdentity = await axios.get(
+        "https://discord.com/api/v10/users/@me",
+        {
+          headers: {
+            Authorization: `Bearer ${access}`,
+          },
+        }
+      );
+
+      const authorId = userIdentity.data.id;
+      let leagueNameId = null;
+      // iter connections to find league
+      const connections = userConns.data;
+      for (let i = 0; i < connections.length; i++) {
+        if (connections[i].type === "leagueoflegends") {
+          leagueNameId = connections[i].name;
+        }
+      }
+
+      const createUser = await axios.post(`${HOST}/api/user`, {
+        leagueNameId: leagueNameId,
+        authorId: authorId,
+      });
+
+      // TODO - RENDERIZAR UMA PAGINA BONITA FALANDO QUE DEU CERTO
+      if (createUser.status === 201) {
+        return res
+          .status(200)
+          .json({ sucesso: "Usuario linkado com sucesso!" });
+      }
     }
+  }
+});
+
+app.use(express.json());
+app.post("/api/user", async (req, res) => {
+  try {
+    const { leagueNameId, authorId } = req.body;
+
+    const newUser = await prisma.users.create({
+      data: {
+        leagueId: leagueNameId,
+        discordId: authorId,
+      },
+    });
+
+    return res.status(201).json({ user: newUser });
+  } catch (error) {
+    console.error("Erro ao criar usuário:", error);
+    return res.status(500).json({ error: "Erro interno ao criar usuário." });
   }
 });
 
