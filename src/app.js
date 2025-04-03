@@ -8,6 +8,7 @@ import {
   InteractionType,
   verifyKeyMiddleware,
 } from "discord-interactions";
+import { invalidChannelError } from "./commandErrorHandler.js";
 
 // Create an express app
 const app = express();
@@ -16,11 +17,13 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST;
 
 const API_HOST = process.env.API_HOST;
-const DISCORD_API = process.env.DISCORD_API;
-const GUILD_ID = process.env.GUILD_ID;
 
-const VERIFIED_ROLE_ID = "1357474271751831795";
+const DISCORD_API = process.env.DISCORD_API;
 const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
+
+const GUILD_ID = process.env.GUILD_ID;
+const VERIFIED_ROLE_ID = "1357474271751831795";
+const LINK_CHANNEL_ID = "1357483788891984024";
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
@@ -47,6 +50,7 @@ app.post(
     if (type === InteractionType.APPLICATION_COMMAND) {
       const { name, options } = data;
       const authorId = req.body.member.user.id;
+      const channelId = req.body.channel.id;
 
       switch (name) {
         case "test":
@@ -57,7 +61,11 @@ app.post(
             return commandInfo(res, targetId);
           }
         case "link":
-          return commandLink(res, authorId);
+          if (channelId === LINK_CHANNEL_ID) {
+            return commandLink(res, LINK_CHANNEL_ID);
+          } else {
+            return invalidChannelError(res, LINK_CHANNEL_ID);
+          }
         default:
           console.error(`unknown command: ${name}`);
           return res.status(400).json({ error: "unknown command" });

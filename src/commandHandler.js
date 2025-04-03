@@ -2,6 +2,9 @@ import axios from "axios";
 import { InteractionResponseType } from "discord-interactions";
 
 const API_HOST = process.env.API_HOST;
+const DISCORD_API = process.env.DISCORD_API;
+
+const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
 
 export function commandTest(res) {
   // Send a message into the channel where command was triggered from
@@ -39,12 +42,38 @@ export async function commandInfo(res, targetId) {
   });
 }
 
-export async function commandLink(res, authorId) {
-  return res.send({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content:
-        "https://discord.com/oauth2/authorize?client_id=1356616558004277450&response_type=code&redirect_uri=https%3A%2F%2F4535-187-61-200-25.ngrok-free.app%2Fapi%2Fauth%2Fdiscord%2Fredirect&scope=connections+identify+guilds",
+export async function commandLink(res, linkChannel) {
+  const message = {
+    embeds: [
+      {
+        title: "Conectar sua conta do league of legends com nosso sistema",
+        description:
+          "Ao realizar a conexão teremos acesso apenas ao seu nome, tag e puuid do league of legends que será usado para validar sua conta e encontrar suas partidas.",
+        color: 0x6c3baa,
+        footer: {
+          text: "League Voice Brasil",
+        },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            label: "Conectar",
+            style: 5,
+            url: "https://discord.com/oauth2/authorize?client_id=1356616558004277450&response_type=code&redirect_uri=https%3A%2F%2Fa2e6-187-61-200-25.ngrok-free.app%2Fapi%2Fauth%2Fdiscord%2Fredirect&scope=identify+connections",
+          },
+        ],
+      },
+    ],
+  };
+
+  await axios.post(`${DISCORD_API}/channels/${linkChannel}/messages`, message, {
+    headers: {
+      Authorization: `Bot ${DISCORD_API_KEY}`,
     },
   });
 }
