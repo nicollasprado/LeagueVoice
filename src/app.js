@@ -8,9 +8,6 @@ import {
   InteractionType,
   verifyKeyMiddleware,
 } from "discord-interactions";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 // Create an express app
 const app = express();
@@ -50,6 +47,7 @@ app.post(
         case "info":
           if (options) {
             const targetId = options[0].value;
+            return commandInfo(res, targetId);
           }
           return commandInfo(res, targetId);
         case "link":
@@ -138,16 +136,20 @@ app.post("/api/user", async (req, res) => {
   try {
     const { leagueNameId, authorId } = req.body;
 
-    const newUser = await prisma.users.create({
-      data: {
-        leagueId: leagueNameId,
-        discordId: authorId,
-      },
+    let [leagueUsername, leagueTag] = leagueNameId.split("#");
+    const leagueUserData = await axios.get(
+      `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${leagueUsername}/${leagueTag}?api_key=${process.env.LEAGUE_APIKEY}`
+    );
+    const leaguePuuid = leagueUserData.data.puuid;
+
+    const newUser = await axios.post(`http://localhost:8080/api/user`, {
+      leagueId: leagueNameId,
+      leaguePuuid: leaguePuuid,
+      discordId: authorId,
     });
 
     return res.status(201).json({ user: newUser });
   } catch (error) {
-    console.error("Erro ao criar usuário:", error);
     return res.status(500).json({ error: "Erro interno ao criar usuário." });
   }
 });
