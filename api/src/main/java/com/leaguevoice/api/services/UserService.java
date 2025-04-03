@@ -64,7 +64,17 @@ public class UserService {
             throw new LeagueInfoNotFoundException(discordId);
         }
 
-        return infoDTO;
+        int totalGames = infoDTO.wins() + infoDTO.losses();
+        double winrate = ((double) infoDTO.wins() / totalGames);
+        int winratePercentage = (int) (winrate * 100);
+
+        return new LeagueGetUserInfoDTO(
+                infoDTO.tier(),
+                infoDTO.rank(),
+                infoDTO.wins(),
+                infoDTO.losses(),
+                winratePercentage
+        );
     }
 
 }

@@ -28,9 +28,7 @@ export async function commandInfo(res, targetId) {
     );
     const leagueInfo = infoRequest.data;
 
-    const winrate = (leagueInfo.wins / leagueInfo.losses).toFixed(2);
-
-    response = `Jogador: ${userLeagueId} \nElo: ${leagueInfo.tier} ${leagueInfo.rank} \nWinrate: ${winrate} em ${leagueInfo.wins} vitórias e ${leagueInfo.losses} derrotas.`;
+    response = `Jogador: ${userLeagueId} \nElo: ${leagueInfo.tier} ${leagueInfo.rank} \nWinrate: ${leagueInfo.winrate}% em ${leagueInfo.wins} vitórias e ${leagueInfo.losses} derrotas.`;
   }
 
   return res.send({

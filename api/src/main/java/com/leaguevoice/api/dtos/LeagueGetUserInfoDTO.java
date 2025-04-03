@@ -4,6 +4,7 @@ public record LeagueGetUserInfoDTO(
         String tier,
         String rank,
         Integer wins,
-        Integer losses
+        Integer losses,
+        Integer winrate
 ) {
 }
