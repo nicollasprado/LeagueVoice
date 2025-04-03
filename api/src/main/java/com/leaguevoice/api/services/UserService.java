@@ -24,9 +24,11 @@ public class UserService {
 
 
     public UserCreateResponseDTO createUnique(UserCreateDTO data){
+        String leaguePuuid = riotApiClient.getUserPuuidByNameTag(data.leagueId());
+
         User newUser = userRepository.save(new User(
                 data.leagueId(),
-                data.leaguePuuid(),
+                leaguePuuid,
                 data.discordId()
         ));
 

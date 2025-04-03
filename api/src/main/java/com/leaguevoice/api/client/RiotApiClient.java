@@ -1,6 +1,7 @@
 package com.leaguevoice.api.client;
 
 import com.leaguevoice.api.dtos.LeagueGetUserInfoDTO;
+import com.leaguevoice.api.dtos.RiotAccountGetDTO;
 import com.leaguevoice.api.services.exceptions.LeagueInfoNotFoundException;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,11 +17,31 @@ import java.util.List;
 @Service
 @NoArgsConstructor
 public class RiotApiClient {
+    private final String RIOT_AMERICAS_ACCOUNT_API_URL = "https://americas.api.riotgames.com/riot/account/v1";
+    private final String RIOT_BR_API_URL = "https://br1.api.riotgames.com/lol";
+
     @Value("${api.riot.dev.apikey}")
     private String API_KEY;
 
+    public String getUserPuuidByNameTag(String leagueNameTag){
+        String[] leagueNameTagSplits = leagueNameTag.split("#");
+
+        String apiUrl = UriComponentsBuilder.fromUriString(RIOT_AMERICAS_ACCOUNT_API_URL + "/accounts/by-riot-id/{leagueUser}/{leagueTag}")
+                .queryParam("api_key", API_KEY)
+                .buildAndExpand(leagueNameTagSplits[0], leagueNameTagSplits[1])
+                .toUriString();
+
+        try{
+            RiotAccountGetDTO response = new RestTemplate().getForObject(apiUrl, RiotAccountGetDTO.class);
+
+            return response.puuid();
+        } catch (RuntimeException e) {
+            throw new LeagueInfoNotFoundException(leagueNameTag);
+        }
+    }
+
     public LeagueGetUserInfoDTO getLeagueInfo(String leagueUserPuuid){
-        String apiUrl = UriComponentsBuilder.fromUriString("https://br1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}")
+        String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/league/v4/entries/by-puuid/{puuid}")
                 .queryParam("api_key", API_KEY)
                 .buildAndExpand(leagueUserPuuid)
                 .toUriString();

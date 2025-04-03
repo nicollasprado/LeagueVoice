@@ -15,6 +15,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST;
 
+const API_HOST = process.env.API_HOST;
+const DISCORD_API = process.env.DISCORD_API;
+const GUILD_ID = process.env.GUILD_ID;
+
+const VERIFIED_ROLE_ID = "1357474271751831795";
+const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
+
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  * Parse request body and verifies incoming requests using discord-interactions package
@@ -49,7 +56,6 @@ app.post(
             const targetId = options[0].value;
             return commandInfo(res, targetId);
           }
-          return commandInfo(res, targetId);
         case "link":
           return commandLink(res, authorId);
         default:
@@ -75,21 +81,17 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
       redirect_uri: `${HOST}/api/auth/discord/redirect`,
     });
 
-    const oauthToken = await axios.post(
-      "https://discord.com/api/v10/oauth2/token",
-      data,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
+    const oauthToken = await axios.post(`${DISCORD_API}/oauth2/token`, data, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
 
     if (oauthToken.data) {
       const access = oauthToken.data.access_token;
 
       const userConns = await axios.get(
-        "https://discord.com/api/v10/users/@me/connections",
+        `${DISCORD_API}/users/@me/connections`,
         {
           headers: {
             Authorization: `Bearer ${access}`,
@@ -97,14 +99,11 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
         }
       );
 
-      const userIdentity = await axios.get(
-        "https://discord.com/api/v10/users/@me",
-        {
-          headers: {
-            Authorization: `Bearer ${access}`,
-          },
-        }
-      );
+      const userIdentity = await axios.get(`${DISCORD_API}/users/@me`, {
+        headers: {
+          Authorization: `Bearer ${access}`,
+        },
+      });
 
       const authorId = userIdentity.data.id;
       let leagueNameId = null;
@@ -116,41 +115,28 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
         }
       }
 
-      const createUser = await axios.post(`${HOST}/api/user`, {
-        leagueNameId: leagueNameId,
-        authorId: authorId,
+      const createUser = await axios.post(`${API_HOST}/user`, {
+        leagueId: leagueNameId,
+        discordId: authorId,
       });
 
       // TODO - RENDERIZAR UMA PAGINA BONITA FALANDO QUE DEU CERTO
       if (createUser.status === 201) {
+        await axios.put(
+          `${DISCORD_API}/guilds/${GUILD_ID}/members/${authorId}/roles/${VERIFIED_ROLE_ID}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bot ${DISCORD_API_KEY}`,
+            },
+          }
+        );
+
         return res
           .status(200)
           .json({ sucesso: "Usuario linkado com sucesso!" });
       }
     }
-  }
-});
-
-app.use(express.json());
-app.post("/api/user", async (req, res) => {
-  try {
-    const { leagueNameId, authorId } = req.body;
-
-    let [leagueUsername, leagueTag] = leagueNameId.split("#");
-    const leagueUserData = await axios.get(
-      `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${leagueUsername}/${leagueTag}?api_key=${process.env.LEAGUE_APIKEY}`
-    );
-    const leaguePuuid = leagueUserData.data.puuid;
-
-    const newUser = await axios.post(`http://localhost:8080/api/user`, {
-      leagueId: leagueNameId,
-      leaguePuuid: leaguePuuid,
-      discordId: authorId,
-    });
-
-    return res.status(201).json({ user: newUser });
-  } catch (error) {
-    return res.status(500).json({ error: "Erro interno ao criar usuário." });
   }
 });
 
