@@ -124,7 +124,7 @@ export async function commandJoin(res, userId, channelId) {
     // find the match
     const match = await axios.get(`${API_HOST}/user/match/${userId}`);
 
-    console.log(match.data);
+    const voiceChannel = 
   } catch (error) {
     if (error.response) {
       if (error.response.status === 404) {
