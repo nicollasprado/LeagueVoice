@@ -1,18 +1,23 @@
 package com.leaguevoice.api.client;
 
 import com.leaguevoice.api.dtos.LeagueGetUserInfoDTO;
+import com.leaguevoice.api.dtos.LeagueMatchDTO;
 import com.leaguevoice.api.dtos.RiotAccountGetDTO;
 import com.leaguevoice.api.services.exceptions.LeagueInfoNotFoundException;
+import com.leaguevoice.api.services.exceptions.LeagueMatchNotFoundException;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @NoArgsConstructor
@@ -35,7 +40,7 @@ public class RiotApiClient {
             RiotAccountGetDTO response = new RestTemplate().getForObject(apiUrl, RiotAccountGetDTO.class);
 
             return response.puuid();
-        } catch (RuntimeException e) {
+        } catch (HttpClientErrorException.NotFound e) {
             throw new LeagueInfoNotFoundException(leagueNameTag);
         }
     }
@@ -51,9 +56,20 @@ public class RiotApiClient {
             });
 
             return response.getBody().getFirst();
-        }catch (RuntimeException e){
-            throw new LeagueInfoNotFoundException(leagueUserPuuid);
+        }catch (HttpClientErrorException.NotFound e){
+            throw new LeagueInfoNotFoundException("player not found");
         }
     }
+
+    public LeagueMatchDTO getUserActiveMatchInfo(String leagueUserPuuid){
+        String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/spectator/v5/active-games/by-summoner/{puuid}")
+                .queryParam("api_key", API_KEY)
+                .buildAndExpand(leagueUserPuuid)
+                .toUriString();
+
+        return new RestTemplate().getForObject(apiUrl, LeagueMatchDTO.class);
+    }
+
+
 
 }

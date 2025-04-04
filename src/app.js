@@ -1,6 +1,12 @@
 import "dotenv/config";
 import express from "express";
-import { commandInfo, commandLink, commandTest } from "./commandHandler.js";
+import {
+  commandCJoin,
+  commandInfo,
+  commandJoin,
+  commandLink,
+  commandTest,
+} from "./commandHandler.js";
 import axios from "axios";
 import { URLSearchParams } from "url";
 import {
@@ -30,6 +36,9 @@ const VERIFIED_ROLE_ID = "1357474271751831795";
 const STAFF_ROLE_ID = "1357484525885853898";
 const LINK_CHANNEL_ID = "1357483788891984024";
 
+const JOIN_MESSAGE_CHANNEL_ID = "1357519004423557413";
+const WAITING_VOICE_CHANNEL_ID = "";
+
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  * Parse request body and verifies incoming requests using discord-interactions package
@@ -48,14 +57,15 @@ app.post(
       return res.send({ type: InteractionResponseType.PONG });
     }
 
+    const authorId = req.body.member.user.id;
+    const channelId = req.body.channel.id;
+
     /**
      * Handle slash command requests
      * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
      */
     if (type === InteractionType.APPLICATION_COMMAND) {
       const { name, options } = data;
-      const authorId = req.body.member.user.id;
-      const channelId = req.body.channel.id;
 
       switch (name) {
         case "test":
@@ -75,9 +85,26 @@ app.post(
           }
           return commandLink(res, LINK_CHANNEL_ID);
 
+        case "cjoin":
+          if (channelId != JOIN_MESSAGE_CHANNEL_ID) {
+            return invalidChannelException(res, JOIN_MESSAGE_CHANNEL_ID);
+          } else if (!checkRoles(req, STAFF_ROLE_ID)) {
+            return outOfPermissionException(res, STAFF_ROLE_ID);
+          }
+          return commandCJoin(res, JOIN_MESSAGE_CHANNEL_ID);
+
         default:
           console.error(`unknown command: ${name}`);
           return res.status(400).json({ error: "unknown command" });
+      }
+    }
+
+    if (type === InteractionType.MESSAGE_COMPONENT) {
+      const buttonId = data.custom_id;
+
+      switch (buttonId) {
+        case "join_button":
+          return commandJoin(res, authorId, JOIN_MESSAGE_CHANNEL_ID);
       }
     }
 

@@ -1,14 +1,12 @@
 package com.leaguevoice.api.services;
 
 import com.leaguevoice.api.client.RiotApiClient;
-import com.leaguevoice.api.dtos.LeagueGetUserInfoDTO;
-import com.leaguevoice.api.dtos.UserCreateDTO;
-import com.leaguevoice.api.dtos.UserCreateResponseDTO;
-import com.leaguevoice.api.dtos.UserGetDTO;
+import com.leaguevoice.api.dtos.*;
 import com.leaguevoice.api.services.exceptions.LeagueInfoNotFoundException;
 import com.leaguevoice.api.services.exceptions.UserNotFoundException;
 import com.leaguevoice.api.models.User;
 import com.leaguevoice.api.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +21,7 @@ public class UserService {
     private RiotApiClient riotApiClient;
 
 
+    @Transactional
     public UserCreateResponseDTO createUnique(UserCreateDTO data){
         String leaguePuuid = riotApiClient.getUserPuuidByNameTag(data.leagueId());
 
@@ -77,6 +76,11 @@ public class UserService {
                 infoDTO.losses(),
                 winratePercentage
         );
+    }
+
+    public LeagueMatchDTO getActiveMatchByDiscordId(String discordId){
+        String leagueUserPuuid = this.getUniqueByDiscordId(discordId).leaguePuuid();
+        return riotApiClient.getUserActiveMatchInfo(leagueUserPuuid);
     }
 
 }

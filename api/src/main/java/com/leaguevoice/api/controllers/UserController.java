@@ -1,9 +1,6 @@
 package com.leaguevoice.api.controllers;
 
-import com.leaguevoice.api.dtos.LeagueGetUserInfoDTO;
-import com.leaguevoice.api.dtos.UserCreateDTO;
-import com.leaguevoice.api.dtos.UserCreateResponseDTO;
-import com.leaguevoice.api.dtos.UserGetDTO;
+import com.leaguevoice.api.dtos.*;
 import com.leaguevoice.api.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,5 +40,12 @@ public class UserController {
         LeagueGetUserInfoDTO info = userService.getLeagueInfoByDiscordId(discordId);
 
         return ResponseEntity.ok(info);
+    }
+
+    @GetMapping("/user/match/{discordId}")
+    public ResponseEntity<LeagueMatchDTO> getActiveMatch(@PathVariable String discordId){
+        LeagueMatchDTO match = userService.getActiveMatchByDiscordId(discordId);
+
+        return ResponseEntity.ok(match);
     }
 }

@@ -3,8 +3,9 @@ import { InteractionResponseType } from "discord-interactions";
 
 const API_HOST = process.env.API_HOST;
 const DISCORD_API = process.env.DISCORD_API;
-
 const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
+
+const GUILD_ID = process.env.GUILD_ID;
 
 export function commandTest(res) {
   // Send a message into the channel where command was triggered from
@@ -76,4 +77,73 @@ export async function commandLink(res, linkChannel) {
       Authorization: `Bot ${DISCORD_API_KEY}`,
     },
   });
+}
+
+export async function commandCJoin(res, joinChannelId) {
+  const message = {
+    embeds: [
+      {
+        title: "Conectar a sala de voz da partida em andamento",
+        description:
+          "Clique em conectar para receber permissão em sua partida em andamento.",
+        color: 0x6c3baa,
+        footer: {
+          text: "League Voice Brasil",
+        },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            label: "Conectar",
+            style: 1,
+            custom_id: "join_button",
+          },
+        ],
+      },
+    ],
+  };
+
+  await axios.post(
+    `${DISCORD_API}/channels/${joinChannelId}/messages`,
+    message,
+    {
+      headers: {
+        Authorization: `Bot ${DISCORD_API_KEY}`,
+      },
+    }
+  );
+}
+
+export async function commandJoin(res, userId, channelId) {
+  try {
+    // find the match
+    const match = await axios.get(`${API_HOST}/user/match/${userId}`);
+
+    console.log(match.data);
+  } catch (error) {
+    if (error.response) {
+      if (error.response.status === 404) {
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: "Partida não encontrada, tente novamente mais tarde.",
+            flags: 1 << 6,
+          },
+        });
+      }
+    }
+  }
+
+  // const matchChannelData =
+  // {
+  //   name:
+  // }
+
+  // // try to create channel
+  // const channel = await axios.post(`${DISCORD_API}/guilds/${GUILD_ID}/channels`, );
 }
