@@ -10,8 +10,8 @@
   },
   "scripts": {
     "start": "node src/app.js",
-    "register": "node commands.js",
-    "dev": "nodemon app.js"
+    "register": "node src/commands.js",
+    "dev": "nodemon src/app.js"
   },
   "author": "Shay DeWael",
   "license": "MIT",
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "axios": "^1.8.4",
-    "nodemon": "^3.0.0",
-    "prisma": "^6.5.0"
+    "nodemon": "^3.0.0"
   }
 }

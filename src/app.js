@@ -1,21 +1,43 @@
 import "dotenv/config";
 import express from "express";
-import { commandInfo, commandTest } from "./commandHandler.js";
+import {
+  commandCJoin,
+  commandInfo,
+  commandJoin,
+  commandLink,
+  commandTest,
+} from "./commandHandler.js";
 import axios from "axios";
 import { URLSearchParams } from "url";
 import {
-  ButtonStyleTypes,
-  InteractionResponseFlags,
   InteractionResponseType,
   InteractionType,
-  MessageComponentTypes,
   verifyKeyMiddleware,
 } from "discord-interactions";
+import {
+  invalidChannelException,
+  outOfPermissionException,
+} from "./commandExceptionHandler.js";
+import { checkRoles } from "./utils/checkRoles.js";
 
 // Create an express app
 const app = express();
 // Get port, or default to 3000
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST;
+
+const API_HOST = process.env.API_HOST;
+
+const DISCORD_API = process.env.DISCORD_API;
+const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
+
+const GUILD_ID = process.env.GUILD_ID;
+const VERIFIED_ROLE_ID = "1357474271751831795";
+const STAFF_ROLE_ID = "1357484525885853898";
+const LINK_CHANNEL_ID = "1357483788891984024";
+
+const JOIN_MESSAGE_CHANNEL_ID = "1357519004423557413";
+const WAITING_VOICE_CHANNEL_ID = "";
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
@@ -35,22 +57,54 @@ app.post(
       return res.send({ type: InteractionResponseType.PONG });
     }
 
+    const authorId = req.body.member.user.id;
+    const channelId = req.body.channel.id;
+
     /**
      * Handle slash command requests
      * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
      */
     if (type === InteractionType.APPLICATION_COMMAND) {
       const { name, options } = data;
-      const targetId = options[0].value;
 
       switch (name) {
         case "test":
           return commandTest(res);
+
         case "info":
-          return commandInfo(res, targetId);
+          if (options) {
+            const targetId = options[0].value;
+            return commandInfo(res, targetId);
+          }
+
+        case "link":
+          if (channelId != LINK_CHANNEL_ID) {
+            return invalidChannelException(res, LINK_CHANNEL_ID);
+          } else if (!checkRoles(req, STAFF_ROLE_ID)) {
+            return outOfPermissionException(res, STAFF_ROLE_ID);
+          }
+          return commandLink(res, LINK_CHANNEL_ID);
+
+        case "cjoin":
+          if (channelId != JOIN_MESSAGE_CHANNEL_ID) {
+            return invalidChannelException(res, JOIN_MESSAGE_CHANNEL_ID);
+          } else if (!checkRoles(req, STAFF_ROLE_ID)) {
+            return outOfPermissionException(res, STAFF_ROLE_ID);
+          }
+          return commandCJoin(res, JOIN_MESSAGE_CHANNEL_ID);
+
         default:
           console.error(`unknown command: ${name}`);
           return res.status(400).json({ error: "unknown command" });
+      }
+    }
+
+    if (type === InteractionType.MESSAGE_COMPONENT) {
+      const buttonId = data.custom_id;
+
+      switch (buttonId) {
+        case "join_button":
+          return commandJoin(res, authorId, JOIN_MESSAGE_CHANNEL_ID);
       }
     }
 
@@ -68,25 +122,20 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
       client_secret: process.env.DISCORD_SECRET,
       grant_type: "authorization_code",
       code: code.toString(),
-      redirect_uri:
-        "https://4535-187-61-200-25.ngrok-free.app/api/auth/discord/redirect",
+      redirect_uri: `${HOST}/api/auth/discord/redirect`,
     });
 
-    const output = await axios.post(
-      "https://discord.com/api/v10/oauth2/token",
-      data,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
+    const oauthToken = await axios.post(`${DISCORD_API}/oauth2/token`, data, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
 
-    if (output.data) {
-      const access = output.data.access_token;
+    if (oauthToken.data) {
+      const access = oauthToken.data.access_token;
 
       const userConns = await axios.get(
-        "https://discord.com/api/v10/users/@me/connections",
+        `${DISCORD_API}/users/@me/connections`,
         {
           headers: {
             Authorization: `Bearer ${access}`,
@@ -94,7 +143,43 @@ app.get("/api/auth/discord/redirect", async (req, res) => {
         }
       );
 
-      console.log(userConns.data);
+      const userIdentity = await axios.get(`${DISCORD_API}/users/@me`, {
+        headers: {
+          Authorization: `Bearer ${access}`,
+        },
+      });
+
+      const authorId = userIdentity.data.id;
+      let leagueNameId = null;
+      // iter connections to find league
+      const connections = userConns.data;
+      for (let i = 0; i < connections.length; i++) {
+        if (connections[i].type === "leagueoflegends") {
+          leagueNameId = connections[i].name;
+        }
+      }
+
+      const createUser = await axios.post(`${API_HOST}/user`, {
+        leagueId: leagueNameId,
+        discordId: authorId,
+      });
+
+      // TODO - RENDERIZAR UMA PAGINA BONITA FALANDO QUE DEU CERTO
+      if (createUser.status === 201) {
+        await axios.put(
+          `${DISCORD_API}/guilds/${GUILD_ID}/members/${authorId}/roles/${VERIFIED_ROLE_ID}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bot ${DISCORD_API_KEY}`,
+            },
+          }
+        );
+
+        return res
+          .status(200)
+          .json({ sucesso: "Usuario linkado com sucesso!" });
+      }
     }
   }
 });
