@@ -64,7 +64,8 @@ public class RiotApiClient {
     public LeagueMatchDTO getUserActiveMatchInfo(String leagueUserPuuid){
         String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/spectator/v5/active-games/by-summoner/{puuid}")
                 .queryParam("api_key", API_KEY)
-                .buildAndExpand(leagueUserPuuid)
+//                .buildAndExpand(leagueUserPuuid)
+                .buildAndExpand("5aTgTXEx1Qh4gJWHovRP8JKjV-ne4r5wg5BhvnHdtso8ALeibybrqI8fT4eQnbZl7Hz-Y43m7BmLSg")
                 .toUriString();
 
         return new RestTemplate().getForObject(apiUrl, LeagueMatchDTO.class);

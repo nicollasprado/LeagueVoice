@@ -1,5 +1,6 @@
 package com.leaguevoice.api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -36,6 +37,10 @@ public class User {
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp
     private LocalDate createdAt;
+
+    @OneToOne(mappedBy = "userId")
+    @JsonIgnore
+    private MatchUser activeMatch;
 
 
     public User(String leagueId, String leaguePuuid, String discordId){
