@@ -8,7 +8,11 @@ import {
   InteractionType,
   verifyKeyMiddleware,
 } from "discord-interactions";
-import { invalidChannelError } from "./commandErrorHandler.js";
+import {
+  invalidChannelException,
+  outOfPermissionException,
+} from "./commandExceptionHandler.js";
+import { checkRoles } from "./utils/checkRoles.js";
 
 // Create an express app
 const app = express();
@@ -23,6 +27,7 @@ const DISCORD_API_KEY = process.env.DISCORD_TOKEN;
 
 const GUILD_ID = process.env.GUILD_ID;
 const VERIFIED_ROLE_ID = "1357474271751831795";
+const STAFF_ROLE_ID = "1357484525885853898";
 const LINK_CHANNEL_ID = "1357483788891984024";
 
 /**
@@ -55,17 +60,21 @@ app.post(
       switch (name) {
         case "test":
           return commandTest(res);
+
         case "info":
           if (options) {
             const targetId = options[0].value;
             return commandInfo(res, targetId);
           }
+
         case "link":
-          if (channelId === LINK_CHANNEL_ID) {
-            return commandLink(res, LINK_CHANNEL_ID);
-          } else {
-            return invalidChannelError(res, LINK_CHANNEL_ID);
+          if (channelId != LINK_CHANNEL_ID) {
+            return invalidChannelException(res, LINK_CHANNEL_ID);
+          } else if (!checkRoles(req, STAFF_ROLE_ID)) {
+            return outOfPermissionException(res, STAFF_ROLE_ID);
           }
+          return commandLink(res, LINK_CHANNEL_ID);
+
         default:
           console.error(`unknown command: ${name}`);
           return res.status(400).json({ error: "unknown command" });

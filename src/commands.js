@@ -12,7 +12,7 @@ const TEST_COMMAND = {
 
 const LINKACCOUNT_COMMAND = {
   name: "link",
-  description: "Conecta sua conta do league of legends com nosso sistema",
+  description: "Cria a mensagem de conectar a conta",
   type: 1,
   integration_types: [0, 1],
   contexts: [0, 1],
