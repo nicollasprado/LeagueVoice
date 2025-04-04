@@ -1,2 +1,2 @@
 # LeagueVoice
-Bot de discord
+Bot de discord lol
