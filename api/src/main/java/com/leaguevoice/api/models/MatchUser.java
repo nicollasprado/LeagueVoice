@@ -1,6 +1,7 @@
 package com.leaguevoice.api.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -20,15 +21,30 @@ public class MatchUser {
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    private User userId;
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "active_match_id")
-    private ActiveMatch activeMatchId;
+    private ActiveMatch activeMatch;
+
+    @Column(name = "team_id", nullable = false, updatable = false)
+    @NotBlank
+    private String teamId;
+
+    @Column(name = "champion_id", nullable = false, updatable = false)
+    @NotBlank
+    private String championId;
+
+    @Column(name = "summoner_id", nullable = false, updatable = false)
+    @NotBlank
+    private String summonerId;
 
 
-    public MatchUser(User userId, ActiveMatch activeMatchId) {
-        this.userId = userId;
-        this.activeMatchId = activeMatchId;
+    public MatchUser(User user, ActiveMatch activeMatch, String teamId, String championId, String summonerId) {
+        this.user = user;
+        this.activeMatch = activeMatch;
+        this.teamId = teamId;
+        this.championId = championId;
+        this.summonerId = summonerId;
     }
 }

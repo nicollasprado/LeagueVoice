@@ -122,9 +122,10 @@ export async function commandCJoin(res, joinChannelId) {
 export async function commandJoin(res, userId, channelId) {
   try {
     // find the match
-    const match = await axios.get(`${API_HOST}/user/match/${userId}`);
+    const match = await axios.get(`${API_HOST}/activeMatch/by-discordid/${userId}`);
 
-    const voiceChannel = 
+    //const voiceChannel =
+    console.log(match.data);
   } catch (error) {
     if (error.response) {
       if (error.response.status === 404) {

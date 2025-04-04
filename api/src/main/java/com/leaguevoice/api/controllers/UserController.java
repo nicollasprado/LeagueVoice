@@ -42,10 +42,4 @@ public class UserController {
         return ResponseEntity.ok(info);
     }
 
-    @GetMapping("/user/match/{discordId}")
-    public ResponseEntity<LeagueMatchDTO> getActiveMatch(@PathVariable String discordId){
-        LeagueMatchDTO match = userService.getActiveMatchByDiscordId(discordId);
-
-        return ResponseEntity.ok(match);
-    }
 }

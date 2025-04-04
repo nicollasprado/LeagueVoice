@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 @Entity
 @Table(name = ActiveMatch.TABLE_NAME)
@@ -27,6 +27,17 @@ public class ActiveMatch {
     private String queueTypeId;
 
     @OneToMany(mappedBy = "activeMatchId", cascade = CascadeType.ALL)
-    private Set<MatchUser> usersInMatch;
+    private List<MatchUser> usersInMatch;
+
+    @Column(name = "channel_id", nullable = false, unique = true)
+    @NotBlank
+    private String channelId;
+
+
+    public ActiveMatch(Long id, String queueTypeId, String channelId) {
+        this.id = id;
+        this.queueTypeId = queueTypeId;
+        this.channelId = channelId;
+    }
 
 }

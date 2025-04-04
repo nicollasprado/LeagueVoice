@@ -1,15 +1,11 @@
 package com.leaguevoice.api.client;
 
-import com.leaguevoice.api.dtos.LeagueGetUserInfoDTO;
-import com.leaguevoice.api.dtos.LeagueMatchDTO;
-import com.leaguevoice.api.dtos.RiotAccountGetDTO;
+import com.leaguevoice.api.dtos.*;
 import com.leaguevoice.api.services.exceptions.LeagueInfoNotFoundException;
-import com.leaguevoice.api.services.exceptions.LeagueMatchNotFoundException;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -17,7 +13,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @NoArgsConstructor
@@ -45,7 +40,7 @@ public class RiotApiClient {
         }
     }
 
-    public LeagueGetUserInfoDTO getLeagueInfo(String leagueUserPuuid){
+    public LeagueGetUserInfoDTO getLeagueInfoByLeaguePuuid(String leagueUserPuuid){
         String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/league/v4/entries/by-puuid/{puuid}")
                 .queryParam("api_key", API_KEY)
                 .buildAndExpand(leagueUserPuuid)
@@ -61,16 +56,42 @@ public class RiotApiClient {
         }
     }
 
+    public String getLeaguePuuidBySummonerId(String summonerId){
+        String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/summoner/v4/summoners/{summonerId}")
+                .queryParam("api_key", API_KEY)
+                .buildAndExpand(summonerId)
+                .toUriString();
+
+        try{
+            LeagueGetPuuidDTO response = new RestTemplate().getForObject(apiUrl, LeagueGetPuuidDTO.class);
+
+            return response.puuid();
+        }catch (HttpClientErrorException.NotFound e){
+            throw new LeagueInfoNotFoundException("invalid summonerId");
+        }
+    }
+
     public LeagueMatchDTO getUserActiveMatchInfo(String leagueUserPuuid){
         String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/spectator/v5/active-games/by-summoner/{puuid}")
                 .queryParam("api_key", API_KEY)
 //                .buildAndExpand(leagueUserPuuid)
-                .buildAndExpand("5aTgTXEx1Qh4gJWHovRP8JKjV-ne4r5wg5BhvnHdtso8ALeibybrqI8fT4eQnbZl7Hz-Y43m7BmLSg")
+                .buildAndExpand("vIoFRxFGfx3j1uw-cSumnlHbZts09_Cx6iObkp5HpPxXOyqvlX6yuLxVtWxx4JoSNlq2i3roviRw2A")
+//                .buildAndExpand("5aTgTXEx1Qh4gJWHovRP8JKjV-ne4r5wg5BhvnHdtso8ALeibybrqI8fT4eQnbZl7Hz-Y43m7BmLSg")
                 .toUriString();
 
         return new RestTemplate().getForObject(apiUrl, LeagueMatchDTO.class);
     }
 
+    public LeagueSummonerDTO getSummonerInfoByPuuid(String leagueUserPuuid){
+        String apiUrl = UriComponentsBuilder.fromUriString(RIOT_BR_API_URL + "/summoner/v4/summoners/by-puuid/{puuid}")
+                .queryParam("api_key", API_KEY)
+//                .buildAndExpand(leagueUserPuuid)
+                .buildAndExpand("vIoFRxFGfx3j1uw-cSumnlHbZts09_Cx6iObkp5HpPxXOyqvlX6yuLxVtWxx4JoSNlq2i3roviRw2A")
+//                .buildAndExpand("5aTgTXEx1Qh4gJWHovRP8JKjV-ne4r5wg5BhvnHdtso8ALeibybrqI8fT4eQnbZl7Hz-Y43m7BmLSg")
+                .toUriString();
+
+        return new RestTemplate().getForObject(apiUrl, LeagueSummonerDTO.class);
+    }
 
 
 }

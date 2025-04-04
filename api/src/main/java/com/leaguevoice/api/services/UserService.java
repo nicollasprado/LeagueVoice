@@ -57,9 +57,14 @@ public class UserService {
         );
     }
 
+    public User getRawUniqueByDiscordId(String discordId) {
+        Optional<User> foundUser = userRepository.findByDiscordId(discordId);
+        return foundUser.orElseThrow(UserNotFoundException::new);
+    }
+
     public LeagueGetUserInfoDTO getLeagueInfoByDiscordId(String discordId){
         String leagueUserPuuid = this.getUniqueByDiscordId(discordId).leaguePuuid();
-        LeagueGetUserInfoDTO infoDTO = riotApiClient.getLeagueInfo(leagueUserPuuid);
+        LeagueGetUserInfoDTO infoDTO = riotApiClient.getLeagueInfoByLeaguePuuid(leagueUserPuuid);
 
         if(infoDTO.tier().isBlank()){
             throw new LeagueInfoNotFoundException(discordId);
@@ -76,11 +81,6 @@ public class UserService {
                 infoDTO.losses(),
                 winratePercentage
         );
-    }
-
-    public LeagueMatchDTO getActiveMatchByDiscordId(String discordId){
-        String leagueUserPuuid = this.getUniqueByDiscordId(discordId).leaguePuuid();
-        return riotApiClient.getUserActiveMatchInfo(leagueUserPuuid);
     }
 
 }
