@@ -3,8 +3,8 @@ export function checkRoles(request, toFindRoleId) {
 
   let found = false;
 
-  for (let role in userRoles) {
-    if (role === toFindRoleId) {
+  for (let i = 0; i < userRoles.length; i++) {
+    if (userRoles[i] === toFindRoleId) {
       found = true;
       break;
     }
